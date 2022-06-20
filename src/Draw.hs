@@ -33,7 +33,7 @@ possibleMovesColor :: RGB
 possibleMovesColor = (0,197,0)
 
 fontPath :: String
-fontPath = "rsc/NotoSansSymbols2-Regular.ttf"
+fontPath = "../rsc/NotoSansSymbols2-Regular.ttf"
 
 drawChess :: SDL.Window -> SDL.Renderer -> CInt -> CInt -> GameState -> IO()
 drawChess win render tAmount bSize (GameState pieces pMoves _)= do

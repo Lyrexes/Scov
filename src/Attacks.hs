@@ -73,7 +73,28 @@ knightAttacks :: [Word64]
 knightAttacks = [knightAttack r c | r<-[0..7], c<-[0..7]]
 
 knightAttack ::Int -> Int -> Word64
-knightAttack r c = bb
+knightAttack r c = orBB [if bb .&. notAFile > 0 then shiftR bb 17 else 0,
+                         if bb .&. notHFile > 0 then shiftR bb 15 else 0,
+                         if bb .&. notABFile > 0 then shiftR bb 10 else 0,
+                         if bb .&. notGHFile > 0 then shiftR bb 6 else 0,
+                         if bb .&. notHFile > 0 then shiftL bb 17 else 0,
+                         if bb .&. notAFile > 0 then shiftL bb 15 else 0,
+                         if bb .&. notGHFile > 0 then shiftL bb 10 else 0,
+                         if bb .&. notABFile > 0 then shiftL bb 6 else 0]
+    where bb = setBit 0 (r*8+c)
+
+kingAttacks :: [Word64]
+kingAttacks = [kingAttack r c | r<-[0..7], c<-[0..7]]
+
+kingAttack :: Int -> Int -> Word64
+kingAttack r c = orBB [shiftR bb 8,
+                       if bb .&. notAFile > 0 then shiftR bb 9 else 0,
+                       if bb .&. notAFile > 0 then shiftR bb 1 else 0,
+                       if bb .&. notHFile > 0 then shiftR bb 7 else 0,
+                       shiftL bb 8,
+                       if bb .&. notHFile > 0 then shiftL bb 9 else 0,
+                       if bb .&. notHFile > 0 then shiftL bb 1 else 0,
+                       if bb .&. notAFile > 0 then shiftL bb 7 else 0]
     where bb = setBit 0 (r*8+c)
 
 orBB :: [Word64] -> Word64
@@ -88,4 +109,4 @@ pawnAttack Black r c = orBB [if bb .&. notHFile > 0 then shiftL bb 9 else 0,
     where bb = setBit 0 (r*8+c)
 
 main :: IO()
-main = putStrLn (showBitboard (knightAttack 1 2))
+main = mapM_ (putStrLn . showBitboard) kingAttacks
