@@ -3,7 +3,7 @@ import qualified SDL
 import qualified SDL.Font as SDLF
 import Linear (V2(..), V4 (V4))
 import Data.Text (pack)
-import SDL (defaultRenderer, ($=))
+import SDL (defaultRenderer, ($=), initialize)
 import Control.Concurrent (threadDelay)
 import Foreign.C (CInt)
 import Control.Monad (unless)
@@ -12,6 +12,8 @@ import Draw(drawChess)
 import Types(GameState, Color (White))
 import Eval (initGameState, updateGameState)
 
+------------------------------
+-- Window and board constants
 windowSize :: CInt
 windowSize =  600
 
@@ -20,6 +22,7 @@ tileAmount = 8
 
 tileSize :: CInt
 tileSize = div 600 8
+------------------------------
 
 main :: IO()
 main = do
@@ -30,28 +33,12 @@ main = do
   loop win ren sur (initGameState White)
   cleanUp ren win
 
-loop :: SDL.Window -> SDL.Renderer -> SDL.Surface -> GameState -> IO()
-loop window renderer surface currGameState = do
-  start <- SDL.ticks
-
-  events <- fetchEvents tileSize
-
-  let mousePos  = mouseCords events
-      gameState = maybe currGameState (updateGameState currGameState) mousePos
-
-  draw window renderer surface gameState
-
-  end <- SDL.ticks
-  regulateFPS 60 (fromIntegral start) (fromIntegral end)
-  unless (quit events) (loop window renderer surface gameState)
-
-
-cleanUp :: SDL.Renderer -> SDL.Window -> IO()
-cleanUp renderer window = do
-  SDL.destroyRenderer renderer
-  SDL.destroyWindow window
-  SDL.quit
-
+--------------------------------
+--initialize and create Grahpics
+initGraphic :: IO()
+initGraphic = do
+  SDL.initialize [SDL.InitVideo]
+  SDLF.initialize
 
 createWindow :: String -> SDL.V2 CInt -> IO SDL.Window
 createWindow title size = do
@@ -66,7 +53,28 @@ createRenderer = SDL.createSoftwareRenderer
 
 createSurface :: IO SDL.Surface
 createSurface = SDL.createRGBSurface (SDL.V2 windowSize windowSize) SDL.RGB24
+--------------------------------
 
+------------------------------------------
+-- Game loop drawing and processing events
+loop :: SDL.Window -> SDL.Renderer -> SDL.Surface -> GameState -> IO()
+loop window renderer surface currGameState = do
+  start <- SDL.ticks
+
+  events <- fetchEvents tileSize
+
+  let mousePos  = mouseCords events
+      gameState = maybe currGameState (updateGameState currGameState) mousePos
+
+  draw window renderer surface gameState
+
+  end <- SDL.ticks
+  regulateFPS 60 (fromIntegral start) (fromIntegral end)
+  unless (quit events) (loop window renderer surface gameState)
+------------------------------------------
+
+-----------------
+-- Draws the game
 draw :: SDL.Window -> SDL.Renderer -> SDL.Surface -> GameState-> IO()
 draw window renderer surface gameState = do
   screen <- SDL.getWindowSurface window
@@ -83,8 +91,13 @@ draw window renderer surface gameState = do
   _ <- SDL.surfaceBlit surface Nothing screen Nothing
 
   SDL.freeSurface screen
+-----------------
 
-initGraphic :: IO()
-initGraphic = do
-  SDL.initialize [SDL.InitVideo]
-  SDLF.initialize
+---------------------------
+-- Clean up all SDl grahics
+cleanUp :: SDL.Renderer -> SDL.Window -> IO()
+cleanUp renderer window = do
+  SDL.destroyRenderer renderer
+  SDL.destroyWindow window
+  SDL.quit
+---------------------------
