@@ -1,4 +1,4 @@
-module Event (EventData(..), fetchEvents, regulateFPS) where
+module Event (ChessEvent(..), fetchEvents, regulateFPS) where
 import qualified SDL
 import Linear (V2)
 import Foreign.C (CInt)
@@ -7,26 +7,28 @@ import SDL (Event(eventPayload))
 import Data.Int (Int8)
 import Types (Position(..), pointToPosition)
 
-data EventData = EventData {
-  quit :: Bool,
-  mouseCords :: Maybe Position
+data ChessEvent = ChessEvent {
+    quit :: Bool,
+    leftArrow :: Bool,
+    rightArrow :: Bool
 }
+    deriving Show
 
-fetchEvents :: CInt -> IO EventData
-fetchEvents tileAmount = do
-  event <- SDL.waitEvent
-  mCords <- SDL.getAbsoluteMouseLocation
-  mouseButtons <- SDL.getMouseButtons 
-  if mouseButtons SDL.ButtonLeft 
-    then return $ EventData {
-      quit = SDL.QuitEvent == eventPayload event,
-      mouseCords = Just (pointToPosition ((`div` tileAmount) <$> mCords))
-    }
-    else return $ EventData {
-      quit = SDL.QuitEvent == eventPayload event,
-      mouseCords = Nothing
-    }
 
+fetchEvents :: IO ChessEvent
+fetchEvents = do
+    event <- SDL.waitEvent
+    case eventPayload event of
+        SDL.KeyboardEvent (SDL.KeyboardEventData _ SDL.Pressed _ keysym) -> return $ ChessEvent {
+                quit = False,
+                leftArrow = SDL.keysymKeycode keysym == SDL.KeycodeLeft,
+                rightArrow = SDL.keysymKeycode keysym == SDL.KeycodeRight
+            }
+        x -> return $ ChessEvent {
+                quit = SDL.QuitEvent == x,
+                leftArrow = False,
+                rightArrow = False
+            }
 
 
 regulateFPS :: Int -> Int -> Int -> IO()

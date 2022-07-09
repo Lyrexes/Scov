@@ -1,4 +1,4 @@
-module Attacks (pawnAttack, kingAttack, knightAttack, rookAttack, bishopAttack) where
+module Attacks (pawnAttacks, kingAttacks, knightAttacks, rookAttacks, bishopAttacks, queenAttacks) where
 
 import Bitboard(showBitboard, orBB, sqrOf, rowOf, colOf)
 import Types (Color(..), U64)
@@ -76,22 +76,21 @@ notGHFile :: U64
 notGHFile = 4557430888798830399
 -------------------------------
 
----------------------------------------------------------------------
--- calculate Pawn Attack : PawnAttack :: Side -> Square -> PawnAttack
-
-pawnAttack :: Color -> Int -> U64
-pawnAttack White s = orBB [if bb .&. notAFile > 0 then shiftR bb 9 else 0,
+-------------------------------------------------------------------
+-- calculate Pawn Attack : pawnAttacks :: Side -> Square -> Bitboard
+pawnAttacks :: Color -> Int -> U64
+pawnAttacks White s = orBB [if bb .&. notAFile > 0 then shiftR bb 9 else 0,
                              if bb .&. notHFile > 0 then shiftR bb 7 else 0]
     where bb = setBit 0 s
-pawnAttack Black s = orBB [if bb .&. notHFile > 0 then shiftL bb 9 else 0,
+pawnAttacks Black s = orBB [if bb .&. notHFile > 0 then shiftL bb 9 else 0,
                              if bb .&. notAFile > 0 then shiftL bb 7 else 0]
     where bb = setBit 0 s
----------------------------------------------------------------------
+-------------------------------------------------------------------
 
 ----------------------------------------------------------------
--- A table of all possible Knight Attacks: knightAttacks[square]
-knightAttack ::Int -> U64
-knightAttack s = orBB [if bb .&. notAFile > 0 then shiftR bb 17 else 0,
+-- calculate Knight Attacks: knightAttacks :: square -> Bitboard
+knightAttacks ::Int -> U64
+knightAttacks s = orBB [if bb .&. notAFile > 0 then shiftR bb 17 else 0,
                          if bb .&. notHFile > 0 then shiftR bb 15 else 0,
                          if bb .&. notABFile > 0 then shiftR bb 10 else 0,
                          if bb .&. notGHFile > 0 then shiftR bb 6 else 0,
@@ -103,10 +102,10 @@ knightAttack s = orBB [if bb .&. notAFile > 0 then shiftR bb 17 else 0,
     where bb = setBit 0 s
 ----------------------------------------------------------------
 
-------------------------------------------------------------
--- calulate King Attacks: kingAtack ::  Square -> KingAttack
-kingAttack :: Int -> U64
-kingAttack s = orBB [shiftR bb 8,
+----------------------------------------------------------
+-- calulate King Attacks: kingAttacks ::  Square -> Bitboard
+kingAttacks :: Int -> U64
+kingAttacks s = orBB [shiftR bb 8,
                        if bb .&. notAFile > 0 then shiftR bb 9 else 0,
                        if bb .&. notAFile > 0 then shiftR bb 1 else 0,
                        if bb .&. notHFile > 0 then shiftR bb 7 else 0,
@@ -116,13 +115,13 @@ kingAttack s = orBB [shiftR bb 8,
                        if bb .&. notAFile > 0 then shiftL bb 7 else 0
                     ]
     where bb = setBit 0 s
-------------------------------------------------------------
+----------------------------------------------------------
 
 
-------------------------------------------------------------------------------------------
---calculate rook attack: RookAttack :: Square -> FriendlyBlock -> EnemyBlock -> RookAttack
-rookAttack :: Int -> U64 -> U64 -> U64
-rookAttack s bF bE = orBB [
+----------------------------------------------------------------------------------------
+--calculate rook attack: rookAttacks :: Square -> FriendlyBlock -> EnemyBlock -> Bitboard
+rookAttacks :: Int -> U64 -> U64 -> U64
+rookAttacks s bF bE = orBB [
                       orBB ((takeWhileP1 isNotBlockedE . reverse) (takeWhile isNotBlockedF uR)),
                       orBB ((takeWhileP1 isNotBlockedE . reverse) (takeWhile isNotBlockedF dR)),
                       orBB ((takeWhileP1 isNotBlockedE . reverse) (takeWhile isNotBlockedF rR)),
@@ -135,12 +134,12 @@ rookAttack s bF bE = orBB [
         dR = reverse (map (setBit 0 . (`sqrOf` colOf s)) [0..rowOf s])
         rR = reverse (map (setBit 0 . sqrOf (rowOf s))  [colOf s..7])
         lR = reverse (map (setBit 0 . sqrOf (rowOf s)) [0..colOf s])
-------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------
 
-------------------------------------------------------------------------------------------------------------
---calculate bishop attacks with block: bishopAttack :: Square -> FriendlyBlock -> EnemyBlock -> BishopAttack
-bishopAttack :: Int -> U64 -> U64 -> U64
-bishopAttack s bF bE = orBB [
+--------------------------------------------------------------------------------------------------------
+--calculate bishop attacks with block: bishopAttacks :: Square -> FriendlyBlock -> EnemyBlock -> BitBoard
+bishopAttacks :: Int -> U64 -> U64 -> U64
+bishopAttacks s bF bE = orBB [
                         orBB ((takeWhileP1 isNotBlockedE . reverse) (takeWhile isNotBlockedF ruB)),
                         orBB ((takeWhileP1 isNotBlockedE . reverse) (takeWhile isNotBlockedF rdB)),
                         orBB ((takeWhileP1 isNotBlockedE . reverse) (takeWhile isNotBlockedF luB)),
@@ -154,7 +153,13 @@ bishopAttack s bF bE = orBB [
         luB  = zipWith (\r c -> setBit 0 (sqrOf r c)) (reverse [0..rowOf s]) [colOf s..7]
         ldB  = zipWith (\r c -> setBit 0 (sqrOf r c)) [rowOf s..7] (reverse [0..colOf s])
 
--------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------------------------------
+--calulate queen attacks with block: queenAttacks :: Square -> FrriendlBlock -> EnemyBlock -> Bitboard
+queenAttacks :: Int -> U64 -> U64 -> U64
+queenAttacks s bF bE = bishopAttacks s bF bE .|. rookAttacks s bF bE
+-----------------------------------------------------------------------------------------------------
 
 --------------------------------------------------------
 --takeWhile plus the element where the predicate is true

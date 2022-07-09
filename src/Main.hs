@@ -7,10 +7,10 @@ import SDL (defaultRenderer, ($=), initialize)
 import Control.Concurrent (threadDelay)
 import Foreign.C (CInt)
 import Control.Monad (unless)
-import Event ( EventData(quit, mouseCords), fetchEvents, regulateFPS )
+import Event (fetchEvents, regulateFPS, ChessEvent(..))
 import Draw(drawChess)
 import Types(GameState, Color (White))
-import Eval (initGameState, updateGameState)
+import Eval (initGameState)
 
 ------------------------------
 -- Window and board constants
@@ -30,7 +30,7 @@ main = do
   sur <- createSurface
   win <- createWindow "chess" (SDL.V2 windowSize windowSize)
   ren <- createRenderer sur
-  loop win ren sur (initGameState White)
+  loop win ren sur 0 (initGameState White)
   cleanUp ren win
 
 --------------------------------
@@ -57,20 +57,23 @@ createSurface = SDL.createRGBSurface (SDL.V2 windowSize windowSize) SDL.RGB24
 
 ------------------------------------------
 -- Game loop drawing and processing events
-loop :: SDL.Window -> SDL.Renderer -> SDL.Surface -> GameState -> IO()
-loop window renderer surface currGameState = do
+loop :: SDL.Window -> SDL.Renderer -> SDL.Surface -> Int -> [GameState] -> IO()
+loop window renderer surface index gameStates = do
   start <- SDL.ticks
 
-  events <- fetchEvents tileSize
+  event <- fetchEvents
 
-  let mousePos  = mouseCords events
-      gameState = maybe currGameState (updateGameState currGameState) mousePos
 
+  let gameState = gameStates !! index --next gameState in List
+      newIndex  = case (leftArrow event, rightArrow event) of
+        (True,False) -> if index > 0 then index-1 else index
+        (False,True) -> if index < length gameStates-1 then index+1 else index
+        _            -> index
   draw window renderer surface gameState
 
   end <- SDL.ticks
   regulateFPS 60 (fromIntegral start) (fromIntegral end)
-  unless (quit events) (loop window renderer surface gameState)
+  unless (quit event) (loop window renderer surface newIndex gameStates)
 ------------------------------------------
 
 -----------------

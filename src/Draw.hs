@@ -4,19 +4,18 @@ import qualified SDL.Font as SDLF
 import Linear (V2 (V2))
 import Foreign.C.Types ( CInt )
 import Data.Bits
-import Data.Word (Word64)
+import Data.Word (Word64,Word8)
 import Data.Foldable (Foldable(toList))
 import Data.Vector.Storable (fromList)
-import Data.Word (Word8)
 import Control.Monad.IO.Class (MonadIO)
 import Data.Text (pack)
 import SDL.Font (PointSize)
-import Types (PieceType (..), Position (..), positionToPoint,
+import Types (PieceType (..), Position (..), positionToPoint, RGB, U64,
                 cIntToInt8, int8ToCInt, GameState (..), Color (..),
-                pieceToUnicode, isPieceWhite, getBitboard)
+                isPieceWhite, getBitboard)
 
-type RGB = (Word8, Word8, Word8)
-
+-----------------------------
+-- Board and piece constants
 tileColorWhite :: RGB
 tileColorWhite = (238-60, 197-60, 145-60)
 
@@ -34,14 +33,13 @@ possibleMovesColor = (0,197,0)
 
 fontPath :: String
 fontPath = "../rsc/NotoSansSymbols2-Regular.ttf"
+-----------------------------
 
 drawChess :: SDL.Window -> SDL.Renderer -> CInt -> CInt -> GameState -> IO()
-drawChess win render tAmount bSize (GameState pieces pMoves _)= do
+drawChess win render tAmount bSize (GameState pieces) = do
     let tileSize =  div bSize tAmount
     drawTiles render tAmount bSize
     drawAllPieces render tileSize pieces
-    --drawPossibleMoves render tileSize pMoves TODO: fix drawPossibleMove
-
 
 drawTiles :: SDL.Renderer -> CInt -> CInt -> IO()
 drawTiles renderer n size = do
@@ -132,20 +130,20 @@ renderSurfaceToWindow w s i startPoint = do
 rgbToSDLColor :: RGB -> SDLF.Color
 rgbToSDLColor (r,g,b) = SDL.V4 r g b maxBound
 
-drawPossibleMoves :: SDL.Renderer -> CInt -> [Position] -> IO()
-drawPossibleMoves render size ps = do
-    changeDrawColor render possibleMovesColor
-    mapM_ (drawPossibleMove render size) ps
-
 bitboardToPositions :: Word64 -> [(CInt,CInt)]
 bitboardToPositions bb = [(toEnum row,toEnum col) | row <-[0..7], col<-[0..7],
                           testBit bb (row*8+col)]
 
-
-
-drawPossibleMove :: SDL.Renderer -> CInt -> Position -> IO()
-drawPossibleMove render size (Position x y) = do
-    drawTile render (SDL.Rectangle (SDL.P(SDL.V2 xPix yPix)) (SDL.V2 size size))
-        where
-            xPix = int8ToCInt x*size
-            yPix = int8ToCInt y*size
+pieceToUnicode :: PieceType -> String
+pieceToUnicode KingW   = "\x2654"
+pieceToUnicode QueenW  = "\x2655"
+pieceToUnicode RookW   = "\x2656"
+pieceToUnicode BishopW = "\x2657"
+pieceToUnicode KnightW = "\x2658"
+pieceToUnicode PawnW   = "\x2659"
+pieceToUnicode KingB   = "\x2654"
+pieceToUnicode QueenB  = "\x2655"
+pieceToUnicode RookB   = "\x2656"
+pieceToUnicode BishopB = "\x2657"
+pieceToUnicode KnightB = "\x2658"
+pieceToUnicode PawnB   = "\x2659"

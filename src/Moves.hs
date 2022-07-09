@@ -1,6 +1,9 @@
-module Moves (pawnMoves, bishopMoves, knightMoves, rookMoves, queenMoves, kingMoves) where
+module Moves (pawnMoves, bishopMoves, knightMoves,
+              rookMoves, queenMoves, kingMoves,
+              possibleMoves) where
+
 import Data.Bits
-import Types (U64,Color(..))
+import Types (U64,Color(..),PieceType(..))
 import Bitboard (sqrOf, showBitboard, orBB)
 import Attacks (bishopAttacks, knightAttacks, pawnAttacks,
                 kingAttacks, rookAttacks, queenAttacks)
@@ -89,3 +92,16 @@ pawnMoves Black s bF bE = (pawnAttacks Black s .&. bE) .|. adv
         adv = if advSqr .&. (bF .|. bE) == 0 then advSqr .|. doubleAdv else 0
         doubleAdv = if rankSeven .&. setBit 0 s > 0 then setBit 0 (s+16) else 0
 -------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- all possible  moves on given square and given PieceType
+-- possibleMoves :: PieceType -> Square -> FriendlyBlock -> EnemyBlock -> Moves
+possibleMoves :: PieceType -> Int -> U64 -> U64 -> U64
+possibleMoves PawnB s bF bE = pawnMoves Black s bF bE
+possibleMoves PawnW s bF bE = pawnMoves White s bF bE
+possibleMoves pT s bF bE | pT `elem` [KnightB,KnightW] = knightMoves s bF
+                         | pT `elem` [BishopB,BishopW] = bishopMoves s bF bE
+                         | pT `elem` [RookB, RookW]    = rookMoves s bF bE
+                         | pT `elem` [QueenB,QueenW]   = queenMoves s bF bE
+                         | otherwise = kingMoves s bF
+-------------------------------------------------------------------------------
