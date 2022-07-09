@@ -59,21 +59,20 @@ createSurface = SDL.createRGBSurface (SDL.V2 windowSize windowSize) SDL.RGB24
 -- Game loop drawing and processing events
 loop :: SDL.Window -> SDL.Renderer -> SDL.Surface -> Int -> [GameState] -> IO()
 loop window renderer surface index gameStates = do
-  start <- SDL.ticks
+    start <- SDL.ticks
 
-  event <- fetchEvents
+    event <- fetchEvents
 
+    let newIndex  = case (leftArrow event, rightArrow event) of
+            (True,False) -> if index > 0 then index-1 else index
+            (False,True) -> if index < length gameStates-1 then index+1 else index
+            _            -> index
+        gameState = gameStates !! newIndex --next gameState in List
+    draw window renderer surface gameState
 
-  let gameState = gameStates !! index --next gameState in List
-      newIndex  = case (leftArrow event, rightArrow event) of
-        (True,False) -> if index > 0 then index-1 else index
-        (False,True) -> if index < length gameStates-1 then index+1 else index
-        _            -> index
-  draw window renderer surface gameState
-
-  end <- SDL.ticks
-  regulateFPS 60 (fromIntegral start) (fromIntegral end)
-  unless (quit event) (loop window renderer surface newIndex gameStates)
+    end <- SDL.ticks
+    regulateFPS 60 (fromIntegral start) (fromIntegral end)
+    unless (quit event) (loop window renderer surface newIndex gameStates)
 ------------------------------------------
 
 -----------------
