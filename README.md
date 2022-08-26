@@ -1,7 +1,8 @@
 # Scov a Simple Chess Opening Viewer
 A Bitboard Chess Opening Viewer written in Haskell
 
-https://user-images.githubusercontent.com/51889103/187000431-f13aa23c-78d6-4aa2-a1cb-7cc1c22e6300.mp4
+![2022-08-27 00-56-10_Trim](https://user-images.githubusercontent.com/51889103/187001032-1b22b822-22e9-4f3f-aa97-3c1e1df2bdd5.gif)
+
 
 ## Usage 
 ```
