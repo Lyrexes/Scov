@@ -1,7 +1,5 @@
-module Types(PieceType(..), Color(..), Position(..), GameState(..), U64,
-             CEvent(..), RGB,
-             positionToPoint, isPieceWhite, pointToPosition,
-             getBitboard, setBitboard,cIntToInt8, int8ToCInt) where
+module Types(PieceType(..), Color(..), GameState(..), U64,
+             RGB, isPieceWhite, getBitboard, setBitboard) where
 
 import Data.Int (Int8)
 import qualified SDL
@@ -9,46 +7,28 @@ import Foreign.C (CInt)
 import Data.List (elemIndex)
 import Data.Word (Word64,Word8)
 
+-- Bitboard type
 type U64 = Word64
+
+-- Color Type
 type RGB = (Word8,Word8,Word8)
 
-data CEvent = CEvent {
-  quit :: Bool,
-  mouseCords :: Maybe Position
-}
-
+-- piece types
 data PieceType = PawnW | KnightW | BishopW | RookW |
                  QueenW | KingW | PawnB | KnightB |
                  BishopB | RookB | QueenB | KingB
     deriving (Show,Eq,Enum,Bounded)
 
+-- check if piece is white
+-- isPieceWhite :: Piece -> Bool
 isPieceWhite :: PieceType -> Bool
 isPieceWhite p = p `elem` [KingW ,QueenW,RookW,BishopW, KnightW, PawnW]
 
+-- Sides
 data Color = Black | White
     deriving (Show,Eq,Enum)
 
-data Position = Position Int8 Int8
-    deriving(Show,Eq,Ord)
-
-positionToPoint :: Position -> SDL.Point SDL.V2 CInt
-positionToPoint (Position x y) = SDL.P(SDL.V2 newX newY)
-    where
-        newX = int8ToCInt x
-        newY = int8ToCInt y
-
-pointToPosition :: SDL.Point SDL.V2 CInt -> Position
-pointToPosition (SDL.P (SDL.V2 x y)) = Position newX newY
-    where
-        newX = cIntToInt8 x
-        newY = cIntToInt8 y
-
-cIntToInt8 :: CInt-> Int8
-cIntToInt8 c =  toEnum(fromEnum c)
-
-int8ToCInt :: Int8 -> CInt
-int8ToCInt c =  toEnum(fromEnum c)
-
+-- bitboard representation
 type Pieces = [Word64]
 
 newtype GameState  = GameState Pieces

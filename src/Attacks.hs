@@ -1,10 +1,11 @@
 module Attacks (pawnAttacks, kingAttacks, knightAttacks, rookAttacks, bishopAttacks, queenAttacks) where
 
 import Bitboard(showBitboard, orBB, sqrOf, rowOf, colOf)
-import Types (Color(..), U64)
+import Types (Color(..), U64, PieceType(..))
 import Debug.Trace
 import Data.Bits
 import Data.Word
+import Fen (parseFEN)
 
 
 {-------------------------------
@@ -122,38 +123,38 @@ kingAttacks s = orBB [shiftR bb 8,
 --calculate rook attack: rookAttacks :: Square -> FriendlyBlock -> EnemyBlock -> Bitboard
 rookAttacks :: Int -> U64 -> U64 -> U64
 rookAttacks s bF bE = orBB [
-                      orBB ((takeWhileP1 isNotBlockedE . reverse) (takeWhile isNotBlockedF uR)),
-                      orBB ((takeWhileP1 isNotBlockedE . reverse) (takeWhile isNotBlockedF dR)),
-                      orBB ((takeWhileP1 isNotBlockedE . reverse) (takeWhile isNotBlockedF rR)),
-                      orBB ((takeWhileP1 isNotBlockedE . reverse) (takeWhile isNotBlockedF lR))
+                      orBB (takeWhileP1 isNotBlockedE (takeWhile isNotBlockedF uR)),
+                      orBB (takeWhileP1 isNotBlockedE (takeWhile isNotBlockedF dR)),
+                      orBB (takeWhileP1 isNotBlockedE (takeWhile isNotBlockedF rR)),
+                      orBB (takeWhileP1 isNotBlockedE (takeWhile isNotBlockedF lR))
                 ]
     where
         isNotBlockedF x = x .&. bF == 0
         isNotBlockedE x = x .&. bE == 0
-        uR = reverse (map (setBit 0 . (`sqrOf` colOf s)) [rowOf s..7])
-        dR = reverse (map (setBit 0 . (`sqrOf` colOf s)) [0..rowOf s])
-        rR = reverse (map (setBit 0 . sqrOf (rowOf s))  [colOf s..7])
-        lR = reverse (map (setBit 0 . sqrOf (rowOf s)) [0..colOf s])
+        dR = map (bit . (`sqrOf` colOf s)) [rowOf s+1..7]
+        uR = map (bit . (`sqrOf` colOf s)) (reverse [0..rowOf s-1])
+        rR = map (bit . sqrOf (rowOf s))  [colOf s+1..7]
+        lR = map (bit . sqrOf (rowOf s)) (reverse [0..colOf s-1])
 ----------------------------------------------------------------------------------------
 
---------------------------------------------------------------------------------------------------------
---calculate bishop attacks with block: bishopAttacks :: Square -> FriendlyBlock -> EnemyBlock -> BitBoard
+---------------------------------------------------------------------
+-- calculate bishop attacks with block:
+-- bishopAttacks :: Square -> FriendlyBlock -> EnemyBlock -> BitBoard
 bishopAttacks :: Int -> U64 -> U64 -> U64
 bishopAttacks s bF bE = orBB [
-                        orBB ((takeWhileP1 isNotBlockedE . reverse) (takeWhile isNotBlockedF ruB)),
-                        orBB ((takeWhileP1 isNotBlockedE . reverse) (takeWhile isNotBlockedF rdB)),
-                        orBB ((takeWhileP1 isNotBlockedE . reverse) (takeWhile isNotBlockedF luB)),
-                        orBB ((takeWhileP1 isNotBlockedE . reverse) (takeWhile isNotBlockedF ldB))
-                        ]
+        orBB (takeWhileP1 isNotBlockedE (takeWhile isNotBlockedF ruB)),
+        orBB (takeWhileP1 isNotBlockedE (takeWhile isNotBlockedF rdB)),
+        orBB (takeWhileP1 isNotBlockedE (takeWhile isNotBlockedF luB)),
+        orBB (takeWhileP1 isNotBlockedE (takeWhile isNotBlockedF ldB))
+        ]
     where
-        isNotBlockedF x = x .&. bF == 0
-        isNotBlockedE x = x .&. bE == 0
-        ruB  = zipWith (\r c -> setBit 0 (sqrOf r c)) [rowOf s..7] [colOf s..7]
-        rdB  = zipWith (\r c -> setBit 0 (sqrOf r c)) [0..rowOf s] [0..colOf s]
-        luB  = zipWith (\r c -> setBit 0 (sqrOf r c)) (reverse [0..rowOf s]) [colOf s..7]
-        ldB  = zipWith (\r c -> setBit 0 (sqrOf r c)) [rowOf s..7] (reverse [0..colOf s])
-
--------------------------------------------------------------------------------------------------------
+    isNotBlockedF x = x .&. bF == 0
+    isNotBlockedE x = x .&. bE == 0
+    ruB  = zipWith (\r c -> bit (sqrOf r c)) (reverse [0..rowOf s -1]) [colOf s+1..7]
+    rdB  = zipWith (\r c -> bit (sqrOf r c)) [rowOf s+1..7] [colOf s+1..7]
+    luB  = zipWith (\r c -> bit (sqrOf r c)) (reverse [0..rowOf s-1]) (reverse [0..colOf s-1])
+    ldB  = zipWith (\r c -> bit (sqrOf r c)) [rowOf s+1..7] (reverse [0..colOf s-1])
+---------------------------------------------------------------------
 
 -----------------------------------------------------------------------------------------------------
 --calulate queen attacks with block: queenAttacks :: Square -> FrriendlBlock -> EnemyBlock -> Bitboard

@@ -1,42 +1,43 @@
-module Event (ChessEvent(..), fetchEvents, regulateFPS) where
+module Event (ChessEvent(..), Command(..),
+              fetchEvents) where
 import qualified SDL
-import Linear (V2)
-import Foreign.C (CInt)
-import Control.Concurrent (threadDelay)
 import SDL (Event(eventPayload))
-import Data.Int (Int8)
-import Types (Position(..), pointToPosition)
+
+data Command = PrevMove | NextMove | None
+    deriving (Show,Enum,Eq,Ord)
 
 data ChessEvent = ChessEvent {
     quit :: Bool,
-    leftArrow :: Bool,
-    rightArrow :: Bool
+    cmd :: Command
 }
     deriving Show
 
-
+-------------------------------------
+-- fetch events
+-- fetchEvents :: () -> ChessEvent
 fetchEvents :: IO ChessEvent
 fetchEvents = do
     event <- SDL.waitEvent
     case eventPayload event of
-        SDL.KeyboardEvent (SDL.KeyboardEventData _ SDL.Pressed _ keysym) -> return $ ChessEvent {
+        SDL.KeyboardEvent (SDL.KeyboardEventData _ SDL.Pressed _ keysym)
+            -> return $ ChessEvent {
                 quit = False,
-                leftArrow = SDL.keysymKeycode keysym == SDL.KeycodeLeft,
-                rightArrow = SDL.keysymKeycode keysym == SDL.KeycodeRight
+                cmd  = fetchKeys keysym
             }
         x -> return $ ChessEvent {
                 quit = SDL.QuitEvent == x,
-                leftArrow = False,
-                rightArrow = False
+                cmd  = None
             }
+-------------------------------------
 
-
-regulateFPS :: Int -> Int -> Int -> IO()
-regulateFPS 0 start end = return ()
-regulateFPS fps start end =
-  let
-    ticksPerFrame = div 1000 fps
-    done = end - start
-    delta = ticksPerFrame - done
-    in
-      threadDelay (max 0 delta * 1000)
+-------------------------------------
+-- fetch keys
+-- fetchKeys :: KeySym -> Command
+fetchKeys :: SDL.Keysym -> Command
+fetchKeys keysym = case (SDL.keysymKeycode keysym == SDL.KeycodeLeft
+                      || SDL.keysymKeycode keysym == SDL.KeycodeH
+                     ,SDL.keysymKeycode keysym == SDL.KeycodeRight
+                      || SDL.keysymKeycode keysym == SDL.KeycodeL) of
+                    (True, False)  -> PrevMove
+                    (False, True)  -> NextMove
+                    _              -> None

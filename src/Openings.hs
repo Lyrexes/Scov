@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 
-module Openings (Move(..),DisAmb(..),testParseMoves) where
+module Openings (Move(..),DisAmb(..), readOpenings, OpeningMeta(..),
+                parseMoves) where
 import Types (U64,PieceType(..),Color(..))
 import Data.Aeson as A
 import Data.ByteString.Lazy.UTF8 (fromString)
@@ -49,11 +50,11 @@ instance A.FromJSON OpeningMeta
 
 ------------------------------------------------------------------------
 -- reads and parses eco.json to a list [Opening {name, eco, fen, moves}]
-readOpenings :: IO [OpeningMeta]
+readOpenings :: IO [(Int,OpeningMeta)]
 readOpenings = do
     json <- Prelude.readFile "eco.json"
     case A.decode (fromString json)::Maybe [OpeningMeta] of
-        Just openings -> return openings
+        Just openings -> return (zip [1..] openings)
         Nothing -> error "could not read eco.json"
 ------------------------------------------------------------------------
 
@@ -104,9 +105,6 @@ parsePiece 'N' = Knight
 parsePiece _   = Pawn
 ------------------------------------------------
 
-testParseMoves :: String -> [Move]
-testParseMoves = tokensToMoves . tokenize
-
 ----------------
 -- Parse opening
 parseMoves :: OpeningMeta -> [Move]
@@ -146,14 +144,3 @@ tokenToPiece Black Queen  = QueenB
 tokenToPiece White King   = KingW
 tokenToPiece Black King   = KingB
 tokenToPiece _ x = error ("tokenToPiece takes only Pieces, got: " ++ show x)
-----------------
-
-{-
-main :: IO()
-main = do
-    o <- readOpenings
-    --print (zip [0..length o](map splitMoves [x |x <- moveStrings o ]))
-    let i = 3000
-    print (map moves o !! i)
-  print (zip [1..16](parseMoves (o !! i)))
--}

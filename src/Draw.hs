@@ -1,4 +1,4 @@
-module Draw (drawChess) where
+module Draw (drawChess,getPieceSurface) where
 import qualified SDL
 import qualified SDL.Font as SDLF
 import Linear (V2 (V2))
@@ -10,8 +10,8 @@ import Data.Vector.Storable (fromList)
 import Control.Monad.IO.Class (MonadIO)
 import Data.Text (pack)
 import SDL.Font (PointSize)
-import Types (PieceType (..), Position (..), positionToPoint, RGB, U64,
-                cIntToInt8, int8ToCInt, GameState (..), Color (..),
+import Types (PieceType (..), RGB, U64,
+                GameState (..), Color (..),
                 isPieceWhite, getBitboard)
 
 -----------------------------
@@ -35,12 +35,18 @@ fontPath :: String
 fontPath = "../rsc/NotoSansSymbols2-Regular.ttf"
 -----------------------------
 
+----------------------------------------------------------------------------
+-- draw board and pieces
+-- drawChess :: Window -> Renderer -> tiles -> BoardSize -> GameState -> ()
 drawChess :: SDL.Window -> SDL.Renderer -> CInt -> CInt -> GameState -> IO()
 drawChess win render tAmount bSize (GameState pieces) = do
     let tileSize =  div bSize tAmount
     drawTiles render tAmount bSize
     drawAllPieces render tileSize pieces
+----------------------------------------------------------------------------
 
+-----------------------------------------------
+-- drawTiles :: Renderer -> tiles -> size -> ()
 drawTiles :: SDL.Renderer -> CInt -> CInt -> IO()
 drawTiles renderer n size = do
     let
@@ -53,23 +59,17 @@ drawTiles renderer n size = do
                     drawTile renderer rect
                 ) tiles
 
-drawAllPieces :: SDL.Renderer -> CInt -> [Word64] -> IO()
-drawAllPieces ren size bbs = mapM_ (drawPieces ren size bbs)
-                                   [minBound .. maxBound]
-
-drawPieces :: SDL.Renderer -> CInt -> [Word64] -> PieceType -> IO()
-drawPieces ren size bbs pType = do
-    let drawP = drawPiece ren size
-        getBb = getBitboard bbs
-        in
-            mapM_ (drawP pType) (bitboardToPositions (getBb pType))
-
+-- changeDrawColor :: Renderer -> Color -> ()
 changeDrawColor :: SDL.Renderer -> RGB -> IO()
 changeDrawColor ren (r,g,b) = SDL.rendererDrawColor ren SDL.$= SDL.V4 r g b maxBound
 
+-- List of all Tiles with row and column
+-- getTiles :: tiles -> size -> [(Tile,(Row,Col))]
 getTiles :: CInt -> CInt -> [(SDL.Rectangle CInt,(CInt,CInt))]
 getTiles n size = concat [getRowTiles size cur n | cur <- [0..n-1]]
 
+-- changes color on predicate
+-- colorChanger :: Renderer -> Color1 -> Color2 -> Function
 colorChanger :: SDL.Renderer -> RGB -> RGB -> (Bool -> IO ())
 colorChanger r c1 c2 = changer
     where
@@ -77,9 +77,13 @@ colorChanger r c1 c2 = changer
         changer True =  changeDrawColor r c1
         changer False = changeDrawColor r c2
 
+-- draw one tile
+-- drawTile :: Renderer -> Rect -> ()
 drawTile :: SDL.Renderer -> SDL.Rectangle CInt -> IO()
 drawTile r rect = SDL.fillRect r (Just rect)
 
+-- get tiles from one specific row
+-- getRowTiles :: TileSize -> Row -> Amount -> [Tile, (Row,Col)]
 getRowTiles :: CInt -> CInt -> CInt-> [(SDL.Rectangle CInt,(CInt,CInt))]
 getRowTiles tileSize row amount =
     let
@@ -88,10 +92,27 @@ getRowTiles tileSize row amount =
         in
         [(SDL.Rectangle (SDL.P(SDL.V2 (s*col) (s*row))) tSize ,(row,col)) |
         col <- [0..amount-1]]
+-----------------------------------------------
 
-nth :: Int -> SDL.V2 CInt -> CInt
-nth i v = toList v !! i
+----------------------------------------------------------------
+-- draw all pieces
+-- drawAllPieces :: Renderer -> PieceSize -> [Bitboards] -> ()
+drawAllPieces :: SDL.Renderer -> CInt -> [Word64] -> IO()
+drawAllPieces ren size bbs = mapM_ (drawPieces ren size bbs)
+                                   [minBound .. maxBound]
 
+-- draw all pieces of one type
+-- drawPieces :: Renderer -> PieceSize -> [Bitboards]
+--                  -> PieceType -> ()
+drawPieces :: SDL.Renderer -> CInt -> [Word64] -> PieceType -> IO()
+drawPieces ren size bbs pType = do
+    let drawP = drawPiece ren size
+        getBb = getBitboard bbs
+        in
+            mapM_ (drawP pType) (bitboardToPositions (getBb pType))
+
+-- draw one piece
+-- drawPiece :: Renderer -> size -> PieceType -> (Row,Col) -> ()
 drawPiece :: SDL.Renderer -> CInt -> PieceType -> (CInt,CInt)-> IO ()
 drawPiece ren size pType (row,col) = do
     let textureStr = pieceToUnicode pType
@@ -121,19 +142,56 @@ drawPiece ren size pType (row,col) = do
     SDL.destroyTexture texture
     SDLF.free font
 
+-- get surface of one piece
+-- getPieceSurface :: Renderer -> size -> PieceType -> Surface
+getPieceSurface :: SDL.Renderer -> CInt -> PieceType -> IO SDL.Surface
+getPieceSurface ren size pType = do
+    let textureStr = pieceToUnicode pType
+    let colB = rgbToSDLColor pieceColorBlack
+        colW = rgbToSDLColor pieceColorWhite
+
+    font <- SDLF.load fontPath (fromEnum size)
+    surface <- if isPieceWhite pType
+            then SDLF.blended font colW (pack textureStr)
+            else SDLF.blended font colB (pack textureStr)
+
+    texture <- SDL.createTextureFromSurface ren surface
+
+    Just(_,_,_,yMax,_) <- SDLF.glyphMetrics font (head textureStr)
+    textDim <- SDL.surfaceDimensions surface
+
+    let yOff = div (toEnum (abs yMax)) 4
+        pixelPos = SDL.P(SDL.V2 0 0)
+        position = pixelPos - SDL.P(SDL.V2 0 yOff)
+        rect = SDL.Rectangle position textDim
+            in
+                SDL.copy ren texture Nothing (Just rect)
+
+    SDL.destroyTexture texture
+    SDLF.free font
+    return surface
+
+-- render surface to window
+-- renderSurfaceToWindow :: window -> surface -> surface -> Position -> ()
 renderSurfaceToWindow :: (MonadIO m) =>
     SDL.Window -> SDL.Surface -> SDL.Surface -> SDL.Point SDL.V2 CInt -> m ()
 renderSurfaceToWindow w s i startPoint = do
   SDL.surfaceBlit i Nothing s (Just startPoint)
   return ()
 
+-- rgb to sdl color
+-- rgbToSDLColor :: (Red,Green,Blue) -> Color
 rgbToSDLColor :: RGB -> SDLF.Color
 rgbToSDLColor (r,g,b) = SDL.V4 r g b maxBound
 
+-- Bitboard to row column position
+-- bitboardToPositions :: Bitboard -> [(Row,Col)]
 bitboardToPositions :: Word64 -> [(CInt,CInt)]
 bitboardToPositions bb = [(toEnum row,toEnum col) | row <-[0..7], col<-[0..7],
                           testBit bb (row*8+col)]
 
+-- pieceType to unicode character
+-- pieceToUnicode :: PieceType -> UnicodeChar
 pieceToUnicode :: PieceType -> String
 pieceToUnicode KingW   = "\x2654"
 pieceToUnicode QueenW  = "\x2655"
