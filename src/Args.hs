@@ -1,6 +1,6 @@
 module Args (parseArgs,getOpening,Arg(..)) where
 
-import Data.List (intersect,intercalate)
+import Data.List (intersect,intercalate, isInfixOf)
 import Data.Char (isDigit)
 import Types (GameState(GameState))
 import Eval (openingGameStates, initPieces)
@@ -54,7 +54,7 @@ view nam os = if null searched
               else O ( (name . snd . head) searched,
                            (getOpening . snd . head) searched)
     where
-        searched = filter (\(_,x) -> intersect nam (name x) == nam) os
+        searched = filter (\(_,x) -> nam `isInfixOf` name x) os
 
 -- viewID :: ID -> [Openings] -> OpeningArg
 viewID :: Int -> [(Int,OpeningMeta)] -> Arg
@@ -68,7 +68,7 @@ viewS nam s os = if null searched
                  then Msg ("No matches for Opening: " ++ nam)
                  else OWS (oName, opening) (read s)
     where
-        searched = filter (\(_,x) -> intersect nam (name x) == nam) os
+        searched = filter (\(_,x) -> nam `isInfixOf` name x) os
         oName = (name . snd . head) searched
         opening = (getOpening . snd . head) searched
 
@@ -89,7 +89,7 @@ getOpening x = initPieces : ((`openingGameStates`  initPieces) . parseMoves) x
 search :: String -> [(Int,OpeningMeta)] -> Int -> Arg
 search n os num = Msg $getResultStr searched
     where
-        searched = take num (filter (\(_,x) -> intersect n (name x) == n) os)
+        searched = take num (filter (\(_,x) ->  n `isInfixOf` name x) os)
 
 -- getResultStr :: [ResultOpenings] -> ResultOpeningString
 getResultStr :: [(Int,OpeningMeta)] -> String
