@@ -1,9 +1,9 @@
 # Scov a Simple Chess Opening Viewer
 A Bitboard Chess Opening Viewer written in Haskell
 
-https://user-images.githubusercontent.com/51889103/186999871-42d5f956-0fea-41e1-bcb9-f645887a88e2.mp4
+https://user-images.githubusercontent.com/51889103/187000431-f13aa23c-78d6-4aa2-a1cb-7cc1c22e6300.mp4
 
-## Usage
+## Usage 
 ```
 scov [Option] [Opening]
  --search, -s [Opening name]
