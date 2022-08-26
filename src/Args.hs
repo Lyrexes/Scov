@@ -39,7 +39,6 @@ parseArgs (x:i:s:_) o | isArg = viewIDS (read i) s o
     where isArg = x `elem` ["--view-with-size", "-vws"] && isNum s && isNum i
 parseArgs (x:n:s:_) o | x `elem` ["--view-with-size", "-vws"] && isNum s = viewS n s o
 parseArgs (x:_) _     | x `elem` ["--help", "-h"] = Msg helpStr
-parseArgs (x:_) _     | x `elem` ["--test", "-t"] = Msg "TEST"
 parseArgs (x:_) _ = Msg ("command: " ++ x ++ errorStr)
 parseArgs _ _ = Msg "no commands were given, type --help or -h to see all commands!\n"
 

@@ -10,10 +10,6 @@ import Foreign.C (CInt)
 import Control.Monad (unless)
 import Args (parseArgs,Arg(..))
 import Event (fetchEvents, ChessEvent(..), Command(..))
---remove
-import Openings (OpeningMeta)
-import Args(getOpening)
-------------------
 import Draw(drawChess,getPieceSurface)
 import Types(GameState, Color (White), PieceType (..))
 import Openings (readOpenings)
@@ -27,18 +23,11 @@ tileAmount :: CInt
 tileAmount = 8
 ------------------------------
 
------------------
---remove
-allTest :: [(Int,OpeningMeta)]  -> [(Int,[GameState])]
-allTest xs = zip (map fst xs) (map (getOpening . snd) xs)
--------------
-
 main :: IO()
 main = do
     args <- getArgs
     openings <- readOpenings
     case parseArgs args openings of
-        Msg "TEST" -> print (allTest openings) --remove
         Msg x -> putStr x
         O (name,opening) -> initOpening name opening windowSize
         OWS (name,opening) s -> initOpening name opening s
