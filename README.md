@@ -5,5 +5,7 @@ A Bitboard Chess openign viewer written in Haskell
 
 
 ## Build
-`cabal install --lib sdl2`
-`cabal install --lib aeson`
+``
+cabal install --lib sdl2
+cabal install --lib aeson
+``
